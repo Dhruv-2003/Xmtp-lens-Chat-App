@@ -9,6 +9,8 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Link from "next/link";
 import { useProvider, useSigner } from "wagmi";
 
+import { useRouter } from "next/router";
+
 export const buildConversationKey = (peerAddress, conversationId) =>
   `${peerAddress.toLowerCase()}/${conversationId}`;
 
@@ -19,10 +21,12 @@ export default function Home() {
   let [profiles, setProfiles] = useState();
   const provider = useProvider();
   const { data: signer } = useSigner();
+  const router = useRouter();
 
   const { client, setClient, setCurrentConversation, profilesRef } = context;
 
   useEffect(() => {
+    console.log(client);
     if (!Object.keys(profilesRef.current).length) {
       fetchMessages(client);
     } else {
@@ -30,12 +34,13 @@ export default function Home() {
     }
   }, [client]);
 
-  async function initClient(wallet) {
+  async function initClient() {
     try {
       const xmtp = await Client.create(signer, {
         env: "production",
       });
       setClient(xmtp);
+      console.log(xmtp);
     } catch (e) {
       console.error(e);
     }
@@ -169,6 +174,13 @@ export default function Home() {
                 </div>
               </Link>
             ))}
+          <button
+            onClick={() => {
+              router.push("/create");
+            }}
+          >
+            Create a new message
+          </button>
         </div>
       </main>
     </>

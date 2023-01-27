@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 const PREFIX = "lens.dev/dm";
 import { MainContext } from "../context";
 import {
@@ -7,7 +7,7 @@ import {
   getProfile,
 } from "../query";
 import { useRouter } from "next/router";
-import { useAccount } from "wagmi";
+import { useAccount, useSigner } from "wagmi";
 
 const buildConversationId = (profileIdA, profileIdB) => {
   const profileIdAParsed = parseInt(profileIdA, 16);
@@ -23,10 +23,13 @@ export default function create() {
   const router = useRouter();
   const { address } = useAccount();
 
-  const { client } = useContext(MainContext);
+  const context = useContext(MainContext);
+
+  const { client } = context;
 
   async function createMessage() {
     ///Check Handle and Message
+
     if (!lensHandle || !message) return;
     if (!lensHandle.includes(".lens")) {
       lensHandle = lensHandle + ".lens";
@@ -44,18 +47,21 @@ export default function create() {
       },
     });
 
+    const handle = `${lensHandle}`;
+
     /// get the profile by the Handle of the new user , convo to be sent
     const {
       data: { profile },
     } = await apolloClient.query({
       query: getProfile,
       variables: {
-        lensHandle,
+        handle,
       },
     });
 
-    /// Create A New Convo
-    const conversation = await client.conversation.newConversation(
+    console.log(profile, defaultProfile, client);
+    ///Create A New Convo
+    const conversation = await client.conversations.newConversation(
       profile.ownedBy,
       {
         conversationId: buildConversationId(defaultProfile.id, profile.id),
@@ -63,10 +69,12 @@ export default function create() {
       }
     );
 
+    console.log(conversation);
+
     // send the messages
     await conversation.send(message);
 
-    /// push the user back to home
+    // /// push the user back to home
     router.push("/");
   }
   return (
@@ -75,11 +83,13 @@ export default function create() {
       <button onClick={() => createMessage()}>createMessage</button>
       <h3>Lens Handle</h3>
       <input
+        type="text"
         placeholder="0xdhruv.lens"
         onChange={(e) => setLensHandle(e.target.value)}
       />
       <h3>Message</h3>
       <input
+        type="text"
         placeholder="hello..."
         onChange={(e) => setMessage(e.target.value)}
       />
